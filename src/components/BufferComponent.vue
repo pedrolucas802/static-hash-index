@@ -6,14 +6,13 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import InputText from 'primevue/inputtext';
 import BucketComponent from './BucketComponent.vue';
 import { Bucket } from '@/interfaces/Bucket';
+import { Line } from '@/interfaces/Line';
 
 export default defineComponent({
   name: 'BufferComponent',
   components: {
-    // InputText,
     BucketComponent
   },
   data() {
@@ -33,7 +32,7 @@ export default defineComponent({
       nrBuckets: 0 as number,
       nrPages: 0 as number,
       buckets: [] as Bucket[],
-      indexedList: [] as Bucket[]
+      indexedList: [] as Line[]
     }
   },
   methods: {
@@ -47,14 +46,54 @@ export default defineComponent({
     getBucketIndexByKey(value: string): number {
       let hash = this.generateHash(value);
       return  Math.abs(hash % this.nrToHash);
+    },
+
+    paginate(): Line[]{
+      let pageCnt = 0
+      let currentPage = 0
+      this.list.forEach((register, index) => {
+        if(pageCnt >= this.nrSizePage) {
+          currentPage ++
+          pageCnt = 0
+        }
+        this.indexedList.push({key: register, index: index, page: currentPage});
+        pageCnt ++
+      })
+      return this.indexedList
+    },
+
+    bucketDistribution(list: Line[]){
+      console.log(list)
+      let lineCnt = 0
+      let lines: Line[] = []
+      list.forEach(line => {
+        // if (lineCnt >= this.nrSizeBucket){
+        //
+        // }
+        const index = this.getBucketIndexByKey(line.key);
+        let bucket = {index, lines}
+        // this.buckets.push()
+        lineCnt++
+      })
+    },
+    generateBuckets() {
+      this.nrBuckets = Math.ceil(this.list.length / this.nrSizeBucket);
+      for (let i = 0; i < this.nrBuckets; i++) {
+        this.buckets[i] = new Bucket();
+        this.buckets[i].lines = []
+        for (let j = 0; j < this.nrSizeBucket; j++) {
+            this.buckets[i].lines[j]= new Line()
+          }
+      }
+      console.log(this.buckets);
     }
+
   },
   mounted() {
-    this.list.forEach(register => {
-      const index = this.getBucketIndexByKey(register);
-      this.indexedList.push({key: register, page: index});
-    })
-    console.log(this.indexedList);
+    let list = this.paginate()
+    // this.bucketDistribution(list)
+    this.generateBuckets()
+
   }
 });
 </script>

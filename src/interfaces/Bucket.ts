@@ -1,4 +1,8 @@
+import {Line} from "@/interfaces/Line";
+
 export class Bucket {
-    key!: string;
-    page!: number;
+    // index!: number;
+    lines!: Line[];
+    // overflow!: Bucket;
+
 }
