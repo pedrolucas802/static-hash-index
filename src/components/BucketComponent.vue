@@ -1,38 +1,31 @@
 <template>
-  <div class="buffer">
-    oi
-    <InputText></InputText>
+  <div class="buffer" v-for="obj in storage" :key="obj.key">
+    {{ obj?.key }} - {{ obj?.page }}
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
 import InputText from 'primevue/inputtext';
+import { Bucket } from '@/interfaces/Bucket';
 
 export default defineComponent({
   name: 'BucketComponent',
   components: {
-    InputText
+    // InputText
   },
   props: {
-    nrRegisters: Number,
+    storage: Array<any>(),
   },
   data() {
     return {
-      // nrRegisters: 3 as number
+      nrLines: 3 as number
     }
   },
   methods: {
-    generateHash(value: string): number {
-      let concat = '';
-      for(let i = 0; i < value.length; i++) {
-        concat += value.charCodeAt(i).toString();
-      }
-      return parseInt(concat);
-    }
   },
   created() {
-    console.log(this.generateHash('joao'));
+    // console.log(this.generateHash('joao'));
   },
 });
 </script>
