@@ -5,13 +5,11 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import BufferComponent from './components/BufferComponent.vue'
-import HelloWorld from './components/HelloWorld.vue';
 
 export default defineComponent({
   name: 'App',
   components: {
     BufferComponent
-    // HelloWorld
   }
 });
 </script>
