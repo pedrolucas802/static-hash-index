@@ -1,14 +1,7 @@
-import { createStore } from 'vuex'
-
+import {createStore} from 'vuex'
+import Registros from "@/store/Registros";
 export default createStore({
-  state: {
-  },
-  getters: {
-  },
-  mutations: {
-  },
-  actions: {
-  },
-  modules: {
-  }
+    modules: {
+        Registros
+    }
 })
