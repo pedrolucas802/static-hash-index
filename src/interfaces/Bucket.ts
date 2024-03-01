@@ -1,8 +1,7 @@
-import {Line} from "@/interfaces/Line";
+import {Storage} from "@/interfaces/Storage";
 
 export class Bucket {
-    // index!: number;
-    lines!: Line[];
-    // overflow!: Bucket;
-
+    index!: number;
+    storages!: Storage[];
+    storageSize!: number;
 }

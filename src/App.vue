@@ -15,6 +15,7 @@ export default defineComponent({
 </script>
 
 <style>
+@import 'assets/theme/css/blue-saga.css';
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
