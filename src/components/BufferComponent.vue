@@ -8,6 +8,10 @@
       <InputNumber id="nrToHash" v-model="nrToHash" placeholder="Hash number" class="input"/>
       <label for="nrToHash">Hash number</label>
     </FloatLabel>
+    <FloatLabel>
+      <InputNumber id="nrSizeBucket" v-model="nrSizeBucket" placeholder="Bucket size" class="input"/>
+      <label for="nrSizeBucket">Bucket size</label>
+    </FloatLabel>
     <Button label="Submit" @click="submit" class="input"/>
   </div>
 
@@ -17,8 +21,8 @@
     <TabPanel header="Buckets">
       <div class="table">
         <Accordion style="width: 100%">
-          <AccordionTab v-for="bucket in buckets"  :key="bucket.index" :header="'Bucket - '+ bucket.index" >
-            <DataTable v-for="storage in bucket.storages" :value="storage.lines"  :key="storage.index" size="small"  paginator :rows="nrSizeBucket" :tableStyle="{minWidth: '50rem'}" paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink JumpToPageDropdown">
+          <AccordionTab v-for="bucket in buckets"  :key="bucket.index" :header="'Bucket '+ bucket.index + ' - Overflow: '+(bucket.storages.length - 1)" >
+            <DataTable v-for="storage in bucket.storages" :value="storage.lines"  :key="storage.index" size="small" :rows="this.nrSizeBucket" tableStyle="min-width: 50rem" >
               <template #header>Storage - {{storage.index}}</template>
               <Column field="index" header="Index" style="width: 25%"></Column>
               <Column field="key" header="Name" style="width: 70%"></Column>
@@ -39,6 +43,16 @@
           <Column field="page" header="Page" style="width: 5%"></Column>
         </DataTable>
       </div>
+    </TabPanel>
+
+    <TabPanel header="Pesquisa">
+      <div>Pesquisar</div>
+      <FloatLabel>
+        <InputNumber id="nrSizeBucket" v-model="nrSizeBucket" placeholder="Bucket size" class="input"/>
+        <label for="nrSizeBucket">Bucket size</label>
+      </FloatLabel>
+      <Button label="Submit" @click="submit" class="input"/>
+
     </TabPanel>
 
   </TabView>
@@ -109,28 +123,18 @@ export default defineComponent({
     },
 
     bucketDistribution(){
-      let currentBucket = 0
-      let currentStorage = 0
-      let currentLine = 0
-
-      // for (let i = 0; i < this.indexedList.length; i++) {
-      //   if(this.buckets[currentBucket].storages[currentStorage].lines.length == this.nrSizeBucket) currentStorage++
-
-      //   this.buckets[currentBucket].storages[currentStorage].lines.push(this.indexedList[i])
-      //   this.buckets[currentBucket].storages[currentStorage].index = currentStorage
-
-      //   currentBucket++
-      //   if (currentBucket == this.buckets.length) currentBucket = 0
-
-      // }
       this.indexedList.forEach((register) => {
-        // debugger;
         const index = this.getBucketIndexByKey(register.key);
-        if (this.buckets[index].storages[0].lines.length == this.buckets[index].storageSize){
-          console.log('overflow');
-          this.buckets[index].storages[0].lines.push(register);
+        let currentStorage = this.buckets[index].storages.length - 1
+
+        if (this.buckets[index].storages[currentStorage].lines.length == this.nrSizeBucket){
+          this.buckets[index].storages.push(new Storage())
+          this.buckets[index].storages[currentStorage + 1].lines = [] as Line[]
+          this.buckets[index].storages[currentStorage + 1].lines.push(register)
+          this.buckets[index].storages[currentStorage + 1].index = currentStorage + 1
+
         } else {
-          this.buckets[index].storages[0].lines.push(register);
+          this.buckets[index].storages[currentStorage].lines.push(register);
         }
       })
     },
@@ -145,6 +149,7 @@ export default defineComponent({
         this.buckets[i].storages = storage;
         this.buckets[i].storages[0].lines = [];
         this.buckets[i].index = i;
+        this.buckets[i].storages[0].index = 0;
       }
       this.bucketDistribution();
     }
