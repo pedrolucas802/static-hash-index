@@ -18,7 +18,7 @@
       <div class="table">
         <Accordion style="width: 100%">
           <AccordionTab v-for="bucket in buckets"  :key="bucket.index" :header="'Bucket - '+ bucket.index" >
-            <DataTable v-for="storage in bucket.storages" :value="storage.lines"  :key="storage.index" size="small"  paginator :rows="this.nrSizeBucket" tableStyle="min-width: 50rem" paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink JumpToPageDropdown">
+            <DataTable v-for="storage in bucket.storages" :value="storage.lines"  :key="storage.index" size="small"  paginator :rows="nrSizeBucket" :tableStyle="{minWidth: '50rem'}" paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink JumpToPageDropdown">
               <template #header>Storage - {{storage.index}}</template>
               <Column field="index" header="Index" style="width: 25%"></Column>
               <Column field="key" header="Name" style="width: 70%"></Column>
@@ -32,7 +32,7 @@
 
     <TabPanel header="Pages">
       <div class="table">
-        <DataTable :value="indexedList" paginator :rows="this.nrSizePage" tableStyle="min-width: 50rem"
+        <DataTable :value="indexedList" paginator :rows="nrSizePage" sztyle="min-width: 50rem"
                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink JumpToPageDropdown">
           <Column field="index" header="Index" style="width: 25%"></Column>
           <Column field="key" header="Name" style="width: 70%"></Column>
@@ -91,7 +91,7 @@ export default defineComponent({
 
     getBucketIndexByKey(value: string): number {
       let hash = this.generateHash(value);
-      return  Math.abs(hash % this.nrToHash);
+      return  Math.abs(hash % this.nrBuckets);
     },
 
     paginate(): Line[]{
@@ -113,21 +113,26 @@ export default defineComponent({
       let currentStorage = 0
       let currentLine = 0
 
-      for (let i = 0; i < this.indexedList.length; i++) {
-        if(this.buckets[currentBucket].storages[currentStorage].lines.length == this.nrSizeBucket){
-          currentStorage++
-          this.buckets[currentBucket].storages[currentStorage].lines.push(this.indexedList[i])
-          this.buckets[currentBucket].storages[currentStorage].index = currentStorage
+      // for (let i = 0; i < this.indexedList.length; i++) {
+      //   if(this.buckets[currentBucket].storages[currentStorage].lines.length == this.nrSizeBucket) currentStorage++
 
-        } else{
-          this.buckets[currentBucket].storages[currentStorage].lines.push(this.indexedList[i])
-          this.buckets[currentBucket].storages[currentStorage].index = currentStorage
+      //   this.buckets[currentBucket].storages[currentStorage].lines.push(this.indexedList[i])
+      //   this.buckets[currentBucket].storages[currentStorage].index = currentStorage
+
+      //   currentBucket++
+      //   if (currentBucket == this.buckets.length) currentBucket = 0
+
+      // }
+      this.indexedList.forEach((register) => {
+        // debugger;
+        const index = this.getBucketIndexByKey(register.key);
+        if (this.buckets[index].storages[0].lines.length == this.buckets[index].storageSize){
+          console.log('overflow');
+          this.buckets[index].storages[0].lines.push(register);
+        } else {
+          this.buckets[index].storages[0].lines.push(register);
         }
-
-        currentBucket++
-        if (currentBucket == this.buckets.length) currentBucket = 0
-
-      }
+      })
     },
 
     generateBuckets() {
