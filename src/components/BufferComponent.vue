@@ -13,22 +13,22 @@
       <label for="nrSizeBucket">Bucket size</label>
     </FloatLabel>
     <Button label="Submit" @click="submit" class="input"/>
+    <!-- <input type="file" @change="handleFileInputChange($event)" /> -->
   </div>
 
   <TabView >
     <TabPanel header="Buckets">
       <div class="table">
-        <Accordion style="width: 100%">
-<!--          <AccordionTab v-for="bucket in buckets"  :key="bucket.index" :header="'Bucket '+ bucket.index + ' - Overflow: '+(bucket.storages.length - 1)" >-->
-<!--            <DataTable v-for="storage in bucket.storages" :value="storage.lines"  :key="storage.index" size="small" :rows="nrSizeBucket" style="min-width: 50rem" >-->
-<!--              <template #header>Storage - {{storage.index}}</template>-->
-<!--              <Column field="index" header="Index" style="width: 25%"></Column>-->
-<!--              <Column field="key" header="Name" style="width: 70%"></Column>-->
-<!--              <Column field="page" header="Page" style="width: 5%"></Column>-->
-<!--            </DataTable>-->
-<!--          </AccordionTab>-->
+        <Accordion style="width: 100%;">
+          <AccordionTab v-for="bucket in buckets"  :key="bucket.index" :header="'Bucket '+ bucket.index + ' - Overflow: ' + getNumberOfOverflows(bucket)">
+            <DataTable v-for="(b, index) in getBuckets(bucket)" :key="b.index" :value="b.lines">
+             <template #header>Level - {{index}}</template>
+             <Column field="index" header="Index" style="width: 25%"></Column>
+             <Column field="key" header="Name" style="width: 70%"></Column>
+             <Column field="page" header="Page" style="width: 5%"></Column>
+            </DataTable>
+          </AccordionTab>
         </Accordion>
-
       </div>
     </TabPanel>
 
@@ -53,10 +53,8 @@
         </FloatLabel>
         <Button label="Submit" @click="searchHash(searchKey)" class="input"/>
       </div>
-      <div class="form">
-        <label>{{foundLine.index}}</label>
-        <label>{{foundLine.key}}</label>
-        <label>{{foundLine.page}}</label>
+      <div v-if="fgResult" class="form">
+        <label>{{foundLine ? foundLine?.index + foundLine?.key + foundLine?.page : 'Registro não encontrado'}}</label>
       </div>
     </TabPanel>
 
@@ -74,7 +72,31 @@ import Registros from "@/store/Registros";
 export default defineComponent({
   name: 'BufferComponent',
   components: {
-    DataTable
+    DataTable,
+  },
+  setup() {
+    const getBuckets = (bucket: Bucket) : Bucket[] => {
+      let buckets: Bucket[] = [];
+      buckets.push(bucket);
+      while (bucket.overflow) {
+        bucket = bucket.overflow;
+        buckets.push(bucket);
+      }
+      return buckets;
+    }
+    const getNumberOfOverflows = (bucket: Bucket) : number | undefined => {
+      let n = 0;
+      let aux = bucket;
+      while (aux.overflow) {
+        aux = aux.overflow;
+        n++;
+      }
+      return n;
+    }
+    return {
+      getNumberOfOverflows,
+      getBuckets
+    }
   },
   data() {
     return {
@@ -88,9 +110,11 @@ export default defineComponent({
       indexedList: [] as Line[],
       pages: [] as Line[][],
       searchKey: "",
-      foundLine: {} as Line,
+      foundLine: null as Line | null,
       nrCollisions: 0,
-      nrOverflows: 0
+      nrOverflows: 0,
+      fgResult: false,
+      fileContent: null as any,
     }
   },
   methods: {
@@ -114,6 +138,28 @@ export default defineComponent({
         if (bucket.overflow) bucket = bucket.overflow
         else stop = true
       }
+      // console.log(this.foundLine);
+      this.fgResult = true;
+    },
+
+    // handleFileInputChange(event: Event) {
+    //   debugger;
+    //   const file = event.target?.files[0];
+
+    //   if (file) {
+    //     this.readFile(file);
+    //   }
+    // },
+    readFile(file: Blob) {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        this.fileContent = reader.result;
+      };
+
+      reader.readAsText(file);
+      console.log(file);
+      
     },
 
     generateHash(value: string): number {
@@ -222,4 +268,4 @@ a {
 .input {
   margin: 5px
 }
-</style>
+</style>: { target: { files: any[]; }; }: Blob

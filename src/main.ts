@@ -20,6 +20,7 @@ import FloatLabel from "primevue/floatlabel";
 import TabMenu from "primevue/tabmenu";
 import Accordion from "primevue/accordion";
 import AccordionTab from "primevue/accordiontab";
+import FileUpload from "primevue/fileupload";
 createApp(App)
 .use(store)
 .use(PrimeVue)
@@ -36,6 +37,7 @@ createApp(App)
 .component('Accordion', Accordion)
 .component('AccordionTab', AccordionTab)
 .component('FloatLabel', FloatLabel)
+.component('FileUpload', FileUpload)
 
 
     .mount('#app')
