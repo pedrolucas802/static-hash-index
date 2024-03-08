@@ -125,7 +125,8 @@ export default createStore({
       "Pedro Silva",
       "Pedro Silva",
       "Pedro Silva",
-      "Ana Oliveira"
+      "Ana Oliveira",
+        "pedro"
     ]
   },
   getters: {

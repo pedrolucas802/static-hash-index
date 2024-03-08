@@ -45,13 +45,18 @@
       </div>
     </TabPanel>
 
-    <TabPanel header="Pesquisa">
-      <div class="form" style="margin-top: 10px;">
-      <FloatLabel >
-        <InputText id="searchKey" v-model="searchKey" placeholder="Search a key value" class="input"/>
-        <label for="searchKey">Key</label>
-      </FloatLabel>
-      <Button label="Submit" @click="searchHash(searchKey)" class="input"/>
+    <TabPanel header="Pesquisa" v-if="buckets.length > 0">
+      <div class="form">
+        <FloatLabel >
+          <InputText id="searchKey" v-model="searchKey" placeholder="Search a key value" class="input"/>
+          <label for="searchKey">Key</label>
+        </FloatLabel>
+        <Button label="Submit" @click="searchHash(searchKey)" class="input"/>
+      </div>
+      <div class="form">
+        <label>{{foundLine.index}}</label>
+        <label>{{foundLine.key}}</label>
+        <label>{{foundLine.page}}</label>
       </div>
     </TabPanel>
 
@@ -83,6 +88,7 @@ export default defineComponent({
       indexedList: [] as Line[],
       pages: [] as Line[][],
       searchKey: "",
+      foundLine: {} as Line,
       nrCollisions: 0,
       nrOverflows: 0
     }
@@ -94,17 +100,20 @@ export default defineComponent({
       this.show=true
     },
 
-    searchHash(key: string): Line{
+    searchHash(key: string){
       let bIndex = this.getBucketIndexByKey(key)
       let bucket = this.buckets[bIndex]
-      let line = new Line()
-      // bucket.storages.forEach( sto => {
-      //   sto.lines.forEach( l =>{
-      //     if(l.key == key) line = l
-      //   })
-      // })
-      console.log(this.indexedList)
-      return line
+      let stop = false
+      while (!stop) {
+        bucket.lines.forEach(l => {
+          if (l.key === key){
+            this.foundLine = l
+            stop = true
+          }
+        })
+        if (bucket.overflow) bucket = bucket.overflow
+        else stop = true
+      }
     },
 
     generateHash(value: string): number {
@@ -130,7 +139,6 @@ export default defineComponent({
           pageCnt = 0
           this.pages[currentPage] = []
         }
-        // debugger
         this.pages[currentPage].push({key: register, index: index, page: currentPage});
         pageCnt ++
       })
@@ -163,6 +171,7 @@ export default defineComponent({
         this.buckets[i].lines = [];
         this.buckets[i].index = i;
       }
+      console.log(this.buckets)
       this.bucketDistribution();
     },
 
@@ -200,7 +209,7 @@ a {
   width: 50%;
   display: flex;
   align-content: flex-start;
-  margin: 0 auto;
+  margin: 10px auto;
 }
 
 .input-group {
