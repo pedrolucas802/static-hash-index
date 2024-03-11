@@ -13,7 +13,7 @@
       <label for="nrSizeBucket">Bucket size</label>
     </FloatLabel>
     <Button label="Submit" @click="submit" class="input"/>
-    <!-- <input type="file" @change="handleFileInputChange($event)" /> -->
+    <input type='file' accept='text/plain' @change='openFile($event)'><br>
   </div>
 
   <TabView >
@@ -53,9 +53,14 @@
         </FloatLabel>
         <Button label="Submit" @click="searchHash(searchKey)" class="input"/>
       </div>
-      <div v-if="fgResult" class="form">
+      <!-- <div v-if="fgResult" class="form">
         <label>{{foundLine ? foundLine?.index + foundLine?.key + foundLine?.page : 'Registro não encontrado'}}</label>
-      </div>
+      </div> -->
+      <Dialog v-model:visible="fgModal" modal header="Result" :style="{ width: '50rem' }">
+        <div v-if="fgResult">
+          <label>{{foundLine ? foundLine?.index + foundLine?.key + foundLine?.page : 'Registro não encontrado'}}</label>
+        </div>
+      </Dialog>
     </TabPanel>
 
   </TabView>
@@ -66,8 +71,8 @@
 import { defineComponent } from 'vue';
 import { Bucket } from '@/interfaces/Bucket';
 import { Line } from '@/interfaces/Line';
+import { useStore } from 'vuex';
 import DataTable from "primevue/datatable";
-import Registros from "@/store/Registros";
 
 export default defineComponent({
   name: 'BufferComponent',
@@ -75,6 +80,7 @@ export default defineComponent({
     DataTable,
   },
   setup() {
+    const store = useStore();
     const getBuckets = (bucket: Bucket) : Bucket[] => {
       let buckets: Bucket[] = [];
       buckets.push(bucket);
@@ -95,13 +101,15 @@ export default defineComponent({
     }
     return {
       getNumberOfOverflows,
-      getBuckets
+      getBuckets,
+      store
     }
   },
   data() {
     return {
       show: false,
-      list: Registros.state.registros as string[],
+      fgModal: false,
+      list: [] as string[],
       nrToHash: 23 as number,
       nrSizeBucket: 3 as number,
       nrSizePage: 5 as number,
@@ -118,6 +126,20 @@ export default defineComponent({
     }
   },
   methods: {
+    openFile(event: { target: any; }) {
+      var input = event.target;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = reader.result;
+        const node = document.getElementById('output');
+        node?.innerText ? text : null;
+        if(typeof reader.result === 'string') {
+          this.list = reader.result.split('\r\n');
+        }
+      };
+      reader.readAsText(input.files[0]);
+    },
     submit(){
       this.paginate()
       this.generateBuckets()
@@ -138,28 +160,8 @@ export default defineComponent({
         if (bucket.overflow) bucket = bucket.overflow
         else stop = true
       }
-      // console.log(this.foundLine);
       this.fgResult = true;
-    },
-
-    // handleFileInputChange(event: Event) {
-    //   debugger;
-    //   const file = event.target?.files[0];
-
-    //   if (file) {
-    //     this.readFile(file);
-    //   }
-    // },
-    readFile(file: Blob) {
-      const reader = new FileReader();
-
-      reader.onload = () => {
-        this.fileContent = reader.result;
-      };
-
-      reader.readAsText(file);
-      console.log(file);
-      
+      this.fgModal = true;
     },
 
     generateHash(value: string): number {
