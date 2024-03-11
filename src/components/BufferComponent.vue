@@ -12,8 +12,9 @@
       <InputNumber id="nrSizeBucket" v-model="nrSizeBucket" placeholder="Bucket size" class="input"/>
       <label for="nrSizeBucket">Bucket size</label>
     </FloatLabel>
-    <Button label="Submit" @click="submit" class="input"/>
-    <input type='file' accept='text/plain' @change='openFile($event)'><br>
+    <input type='file' id="input-file" accept='text/plain' @change='openFile($event)'><br>
+    <label for="input-file" class="file-label">{{ fgFileChoosen ? nmFile : 'Choose File' }}</label>
+    <Button label="Submit" :disabled="!fgFileChoosen" @click="submit" class="input"/>
   </div>
 
   <TabView >
@@ -109,6 +110,8 @@ export default defineComponent({
     return {
       show: false,
       fgModal: false,
+      fgFileChoosen: false,
+      nmFile: '',
       list: [] as string[],
       nrToHash: 23 as number,
       nrSizeBucket: 3 as number,
@@ -136,8 +139,10 @@ export default defineComponent({
         node?.innerText ? text : null;
         if(typeof reader.result === 'string') {
           this.list = reader.result.split('\r\n');
+          this.fgFileChoosen = true;
         }
       };
+      this.nmFile = input.files[0].name;
       reader.readAsText(input.files[0]);
     },
     submit(){
@@ -230,6 +235,19 @@ export default defineComponent({
 });
 </script>
 <style scoped>
+input[type=file] {
+  display: none;
+}
+.file-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  padding: 7px 14px;
+  height: 40px;
+  color: white;
+  background-color: #2196F3;
+}
 h3 {
   margin: 40px 0 0;
 }
