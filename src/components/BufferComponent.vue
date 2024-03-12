@@ -1,23 +1,36 @@
 <template>
-  <div class="input-group">
-    <FloatLabel>
-      <InputNumber id="nrSizePage" v-model="nrSizePage" placeholder="Size of pages" class="input"/>
-      <label for="nrSizePage">Size of pages</label>
-    </FloatLabel>
-    <FloatLabel>
-      <InputNumber id="nrToHash" v-model="nrToHash" placeholder="Hash number" class="input"/>
-      <label for="nrToHash">Hash number</label>
-    </FloatLabel>
-    <FloatLabel>
-      <InputNumber id="nrSizeBucket" v-model="nrSizeBucket" placeholder="Bucket size" class="input"/>
-      <label for="nrSizeBucket">Bucket size</label>
-    </FloatLabel>
-    <input type='file' id="input-file" accept='text/plain' @change='openFile($event)'><br>
-    <label for="input-file" class="file-label">{{ fgFileChoosen ? nmFile : 'Choose File' }}</label>
-    <Button label="Submit" :disabled="!fgFileChoosen" @click="submit" class="input"/>
-  </div>
+  <div class="input-group justify-content-between">
+    <div class="flex-direction" style="display:flex">
+      <FloatLabel>
+        <InputNumber id="nrSizePage" v-model="nrSizePage" placeholder="Size of pages" class="input"/>
+        <label for="nrSizePage">Size of pages</label>
+      </FloatLabel>
+      <FloatLabel>
+        <InputNumber id="nrToHash" v-model="nrToHash" placeholder="Hash number" class="input"/>
+        <label for="nrToHash">Hash number</label>
+      </FloatLabel>
+      <FloatLabel>
+        <InputNumber id="nrSizeBucket" v-model="nrSizeBucket" placeholder="Bucket size" class="input"/>
+        <label for="nrSizeBucket">Bucket size</label>
+      </FloatLabel>
+      <input type='file' id="input-file" accept='text/plain' @change='openFile($event)'><br>
+      <label for="input-file" class="file-label">{{ fgFileChoosen ? nmFile : 'Choose File' }}</label>
+      <Button label="Submit" :disabled="!fgFileChoosen" @click="submit" class="input"/>
+    </div>
+    <div class="stats" v-if="buckets.length > 0">
+      <div class="result">
+        <label>Nr. colisions</label>
+        <span id="colisions">{{nrCollisions}}</span>
+      </div>
 
-  <TabView >
+      <div class="result">
+        <label for="overflows">Nr. overflows</label>
+        <span id="overflows">{{nrOverflows}}</span>
+      </div>
+
+    </div>
+  </div>
+  <TabView v-if="buckets.length > 0">
     <TabPanel header="Buckets">
       <div class="table">
         <Accordion style="width: 100%;">
@@ -46,7 +59,7 @@
       </div>
     </TabPanel>
 
-    <TabPanel header="Pesquisa" v-if="buckets.length > 0">
+    <TabPanel header="Pesquisa">
       <div class="form">
         <FloatLabel >
           <InputText id="searchKey" v-model="searchKey" placeholder="Search a key value" class="input"/>
@@ -54,12 +67,11 @@
         </FloatLabel>
         <Button label="Submit" @click="searchHash(searchKey)" class="input"/>
       </div>
-      <!-- <div v-if="fgResult" class="form">
-        <label>{{foundLine ? foundLine?.index + foundLine?.key + foundLine?.page : 'Registro não encontrado'}}</label>
-      </div> -->
       <Dialog v-model:visible="fgModal" modal header="Result" :style="{ width: '50rem' }">
-        <div v-if="fgResult">
-          <label>{{foundLine ? foundLine?.index + foundLine?.key + foundLine?.page : 'Registro não encontrado'}}</label>
+        <div v-if="fgResult" class="result">
+          <label>Index: {{foundLine ? foundLine.index : 'Registro não encontrado'}}</label>
+          <label>Key: {{foundLine ? foundLine.key  : 'Registro não encontrado'}}</label>
+          <label>Page: {{foundLine ? foundLine.page : 'Registro não encontrado'}}</label>
         </div>
       </Dialog>
     </TabPanel>
@@ -121,7 +133,7 @@ export default defineComponent({
       indexedList: [] as Line[],
       pages: [] as Line[][],
       searchKey: "",
-      foundLine: null as Line | null,
+      foundLine: {} as Line,
       nrCollisions: 0,
       nrOverflows: 0,
       fgResult: false,
@@ -129,6 +141,12 @@ export default defineComponent({
     }
   },
   methods: {
+    submit(){
+      this.paginate()
+      this.generateBuckets()
+      this.show=true
+    },
+
     openFile(event: { target: any; }) {
       var input = event.target;
 
@@ -145,28 +163,33 @@ export default defineComponent({
       this.nmFile = input.files[0].name;
       reader.readAsText(input.files[0]);
     },
-    submit(){
-      this.paginate()
-      this.generateBuckets()
-      this.show=true
-    },
 
-    searchHash(key: string){
+    async searchHash(key: string) {
       let bIndex = this.getBucketIndexByKey(key)
       let bucket = this.buckets[bIndex]
       let stop = false
+      let page = 0
       while (!stop) {
         bucket.lines.forEach(l => {
-          if (l.key === key){
-            this.foundLine = l
+          if (l.key === key) {
+            page = l.page
             stop = true
           }
         })
         if (bucket.overflow) bucket = bucket.overflow
         else stop = true
       }
+      this.foundLine = await this.findRegisterPerPage(key, page)
       this.fgResult = true;
       this.fgModal = true;
+    },
+
+    async findRegisterPerPage(key: string, page: number): Promise<Line>{
+      let result = {} as Line
+      this.pages[page].forEach(line =>{
+        if(line.key == key) result = line
+      })
+      return result
     },
 
     generateHash(value: string): number {
@@ -224,10 +247,8 @@ export default defineComponent({
         this.buckets[i].lines = [];
         this.buckets[i].index = i;
       }
-      console.log(this.buckets)
       this.bucketDistribution();
     },
-
 
 
   },
@@ -243,10 +264,11 @@ input[type=file] {
   align-items: center;
   justify-content: center;
   border-radius: 3px;
-  padding: 7px 14px;
+  padding: 7px 16px;
   height: 40px;
   color: white;
   background-color: #2196F3;
+  margin-top:5px;
 }
 h3 {
   margin: 40px 0 0;
@@ -287,5 +309,17 @@ a {
 
 .input {
   margin: 5px
+}
+
+.result{
+  display: flex;
+  flex-direction: column;
+  //justify-content: left;
+  padding-right: 16px;
+}
+.stats{
+  display: flex;
+  justify-content: end;
+  //width: 100%;
 }
 </style>: { target: { files: any[]; }; }: Blob
