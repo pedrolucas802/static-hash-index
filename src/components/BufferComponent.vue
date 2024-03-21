@@ -59,6 +59,26 @@
       </div>
     </TabPanel>
 
+    <TabPanel header="Table Scan">
+        <div class="form">
+          <FloatLabel >
+            <InputNumber id="scanAmount" v-model="scanAmount" placeholder="Type a number of lines" class="input"/>
+            <label for="scanAmount">Scan</label>
+          </FloatLabel>
+          <Button label="Submit" @click="tableScan(scanAmount)" class="input"/>
+        </div>
+        <Dialog v-model:visible="fgModalScan" modal header="Scan Result">
+          <div class="result">
+            <label>Registros: {{scanAmount ? scanAmount : 'Não encontrado'}}</label>
+            <label>Paginas acessadas: {{pagesAccessed ? pagesAccessed  : 'Registro não encontrado'}}</label>
+          </div>
+          <DataTable :value="scanLines" :rows="nrSizePage" style="min-width: 50rem; margin-top: 15px;" paginator>
+            <Column field="index" header="Index" style="width: 5%"></Column>
+            <Column field="key" header="Key" style="width: 95%"></Column>
+          </DataTable>
+        </Dialog>
+    </TabPanel>
+
     <TabPanel header="Pesquisa">
       <div class="form">
         <FloatLabel >
@@ -122,6 +142,7 @@ export default defineComponent({
     return {
       show: false,
       fgModal: false,
+      fgModalScan: false,
       fgFileChoosen: false,
       nmFile: '',
       list: [] as string[],
@@ -138,6 +159,10 @@ export default defineComponent({
       nrOverflows: 0,
       fgResult: false,
       fileContent: null as any,
+      scanAmount: 0,
+      pagesAccessed: 0,
+      scanLines: [] as Line[],
+
     }
   },
   methods: {
@@ -250,7 +275,14 @@ export default defineComponent({
       this.bucketDistribution();
     },
 
-
+    tableScan(scanAmount: number) {
+      this.pagesAccessed = Math.ceil(scanAmount / this.nrSizePage)
+      this.scanLines = [];
+      for (let i = 0; i < scanAmount; i++) {
+        this.scanLines.push({key: this.list[i],index: i, page: 0, })
+      }
+      this.fgModalScan = true;
+    }
   },
 
 });
