@@ -22,6 +22,7 @@ import Accordion from "primevue/accordion";
 import AccordionTab from "primevue/accordiontab";
 import Dialog from "primevue/dialog";
 import FileUpload from "primevue/fileupload";
+import Paginator from 'primevue/paginator';
 createApp(App)
 .use(store)
 .use(PrimeVue)
@@ -39,6 +40,7 @@ createApp(App)
 .component('AccordionTab', AccordionTab)
 .component('FloatLabel', FloatLabel)
 .component('FileUpload', FileUpload)
+.component('Paginator', Paginator)
 .component('Dialog', Dialog)
 
 

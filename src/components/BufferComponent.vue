@@ -15,49 +15,50 @@
       </FloatLabel>
       <input type='file' id="input-file" accept='text/plain' @change='openFile($event)'><br>
       <label for="input-file" class="file-label">{{ fgFileChoosen ? nmFile : 'Choose File' }}</label>
-      <Button label="Submit" :disabled="!fgFileChoosen" @click="submit" class="input"/>
+      <Button label="Submit" :disabled="!fgFileChoosen" :loading="submitLoad" @click="submit" class="input"/>
     </div>
-    <div class="stats" v-if="buckets.length > 0">
+    <div class="stats" v-if="showPages">
       <div class="result">
-        <label>Nr. colisions</label>
-        <span id="colisions">{{nrCollisions}}</span>
+        <label>Nr. buckets</label>
+        <span id="buckets">{{buckets.length}}</span>
       </div>
-
       <div class="result">
-        <label for="overflows">Nr. overflows</label>
-        <span id="overflows">{{nrOverflows}}</span>
+        <label>Colisions</label>
+        <span id="colisions">{{ (nrCollisions/list.length * 100).toFixed(2) }}%</span>
       </div>
-
+      <div class="result">
+        <label for="overflows">Overflows</label>
+        <span id="overflows">{{ (nrOverflows/list.length * 100).toFixed(2) }}%</span>
+      </div>
     </div>
   </div>
-  <TabView v-if="buckets.length > 0">
-    <TabPanel header="Buckets">
-      <div class="table">
-        <Accordion style="width: 100%;">
-          <AccordionTab v-for="bucket in buckets"  :key="bucket.index" :header="'Bucket '+ bucket.index + ' - Overflow: ' + getNumberOfOverflows(bucket)">
-            <DataTable v-for="(b, index) in getBuckets(bucket)" :key="b.index" :value="b.lines">
-             <template #header>Level - {{index}}</template>
-             <Column field="index" header="Index" style="width: 25%"></Column>
-             <Column field="key" header="Name" style="width: 70%"></Column>
-             <Column field="page" header="Page" style="width: 5%"></Column>
-            </DataTable>
-          </AccordionTab>
-        </Accordion>
-      </div>
-    </TabPanel>
-
+  <div v-if="submitLoad">
+    <span>Carregando...</span>
+  </div>
+  <TabView  v-if="showPages">
     <TabPanel header="Pages">
       <div class="table">
-        <div v-for="(page, index) in pages"  :key="index">
-          <DataTable :value="page"  :rows="nrSizePage" sztyle="min-width: 50rem">
-            <Column field="index" header="Index" style="width: 25%"></Column>
-            <Column field="key" header="Name" style="width: 40%"></Column>
-            <Column field="page" header="Page" style="width: 5%"></Column>
-          </DataTable>
-        </div>
-
+        <DataTable lazy :value="pages[currentPage]"  :rows="nrSizePage" sztyle="min-width: 50rem">
+          <Column field="index" header="Index" style="width: 25%"></Column>
+          <Column field="key" header="Name" style="width: 40%"></Column>
+          <Column field="page" header="Page" style="width: 5%"></Column>
+        </DataTable>
+        <Paginator  :template="{ default: 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink JumpToPageDropdown', }"
+                    :rows="nrSizePage" :totalRecords="list.length" @page="onPage($event)"></Paginator>
       </div>
     </TabPanel>
+
+<!--    <TabPanel header="Buckets">-->
+<!--      <div class="table">-->
+<!--        <DataTable lazy :value="pages[currentPage]"  :rows="nrSizePage" sztyle="min-width: 50rem">-->
+<!--          <Column field="index" header="Index" style="width: 25%"></Column>-->
+<!--          <Column field="key" header="Name" style="width: 40%"></Column>-->
+<!--          <Column field="page" header="Page" style="width: 5%"></Column>-->
+<!--        </DataTable>-->
+<!--        <Paginator  :template="{ default: 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink JumpToPageDropdown', }"-->
+<!--                    :rows="nrSizePage" :totalRecords="list.length" @page="onPage($event)"></Paginator>-->
+<!--      </div>-->
+<!--    </TabPanel>-->
 
     <TabPanel header="Table Scan">
         <div class="form">
@@ -91,7 +92,7 @@
         <div v-if="fgResult" class="result">
           <label>Index: {{foundLine ? foundLine.index : 'Registro não encontrado'}}</label>
           <label>Key: {{foundLine ? foundLine.key  : 'Registro não encontrado'}}</label>
-          <label>Page: {{foundLine ? foundLine.page : 'Registro não encontrado'}}</label>
+          <label>Page: {{foundLine ? foundLine.page + 1: 'Registro não encontrado'}}</label>
         </div>
       </Dialog>
     </TabPanel>
@@ -104,7 +105,6 @@
 import { defineComponent } from 'vue';
 import { Bucket } from '@/interfaces/Bucket';
 import { Line } from '@/interfaces/Line';
-import { useStore } from 'vuex';
 import DataTable from "primevue/datatable";
 
 export default defineComponent({
@@ -112,38 +112,14 @@ export default defineComponent({
   components: {
     DataTable,
   },
-  setup() {
-    const store = useStore();
-    const getBuckets = (bucket: Bucket) : Bucket[] => {
-      let buckets: Bucket[] = [];
-      buckets.push(bucket);
-      while (bucket.overflow) {
-        bucket = bucket.overflow;
-        buckets.push(bucket);
-      }
-      return buckets;
-    }
-    const getNumberOfOverflows = (bucket: Bucket) : number | undefined => {
-      let n = 0;
-      let aux = bucket;
-      while (aux.overflow) {
-        aux = aux.overflow;
-        n++;
-      }
-      return n;
-    }
-    return {
-      getNumberOfOverflows,
-      getBuckets,
-      store
-    }
-  },
   data() {
     return {
       show: false,
+      showPages: false,
       fgModal: false,
       fgModalScan: false,
       fgFileChoosen: false,
+      submitLoad: false,
       nmFile: '',
       list: [] as string[],
       nrToHash: 23 as number,
@@ -151,25 +127,29 @@ export default defineComponent({
       nrSizePage: 5 as number,
       nrBuckets: 0 as number,
       buckets: [] as Bucket[],
-      indexedList: [] as Line[],
+      book: [] as Line[],
       pages: [] as Line[][],
       searchKey: "",
       foundLine: {} as Line,
-      nrCollisions: 0,
-      nrOverflows: 0,
+      nrCollisions: 0  as number,
+      nrOverflows: 0  as number,
       fgResult: false,
       fileContent: null as any,
       scanAmount: 0,
       pagesAccessed: 0,
       scanLines: [] as Line[],
-
+      pagesTableKey: 0,
+      currentPage: 0
     }
   },
   methods: {
-    submit(){
+     submit(){
+      this.nrOverflows = 0
+      this.nrCollisions = 0
       this.paginate()
       this.generateBuckets()
-      this.show=true
+       console.log("completed")
+       // this.showBuckets = true
     },
 
     openFile(event: { target: any; }) {
@@ -180,13 +160,71 @@ export default defineComponent({
         const text = reader.result;
         const node = document.getElementById('output');
         node?.innerText ? text : null;
-        if(typeof reader.result === 'string') {
-          this.list = reader.result.split('\r\n');
+        if(typeof text === 'string') {
+          this.list = text.split('\n');
           this.fgFileChoosen = true;
         }
       };
       this.nmFile = input.files[0].name;
       reader.readAsText(input.files[0]);
+    },
+
+    paginate(){
+      let pageCnt = 0;
+      let currentPage = 0;
+      this.pages[0] = []
+      this.list.forEach((register, index) => {
+        this.book.push({key: register, index: index, page: currentPage})
+        if(pageCnt >= this.nrSizePage) {
+          currentPage ++
+          pageCnt = 0
+          this.pages[currentPage] = []
+        }
+        this.pages[currentPage].push({key: register, index: index, page: currentPage});
+        pageCnt ++
+      })
+    },
+
+    async generateBuckets() {
+      this.nrBuckets = Math.ceil(this.list.length / this.nrSizeBucket);
+      for (let i = 0; i < this.nrBuckets; i++) {
+        this.buckets[i] = new Bucket();
+        this.buckets[i].lines = [] as Line[];
+        this.buckets[i].index = i;
+      }
+      await this.bucketDistribution();
+    },
+
+    async bucketDistribution(){
+      this.pages.forEach((page) => {
+        page.forEach(line =>{
+          let bucket = this.buckets[this.getBucketIndexByKey(line.key)]
+          if (bucket) {
+            if(bucket.lines.length == this.nrSizeBucket) this.bucketOverflow(bucket, line)
+            else bucket.lines.push(line)
+          }
+          else console.error("Bucket not found for key:",line.key);
+        })
+      })
+      this.showPages = true
+      console.log(this.buckets)
+    },
+
+    bucketOverflow(bucket: Bucket, line: Line){
+      if(bucket.overflow != undefined){
+        if(bucket.overflow.lines.length < this.nrSizeBucket){
+          this.nrCollisions++
+          bucket.overflow.lines.push(line)
+        }else{
+          this.bucketOverflow(bucket.overflow,line)
+        }
+      }else{
+        bucket.overflow = new Bucket()
+        this.nrOverflows++
+        bucket.overflow.lines = [] as Line[];
+        bucket.overflow.lines.push(line)
+        this.nrCollisions++
+      }
     },
 
     async searchHash(key: string) {
@@ -218,61 +256,17 @@ export default defineComponent({
     },
 
     generateHash(value: string): number {
-      let concat = '';
-      for(let i = 0; i < value.length; i++) {
-        concat += value.charCodeAt(i).toString();
+      let hashValue = 0;
+      for (const char of value) {
+        hashValue ^= char.charCodeAt(0);
+        hashValue *= this.nrToHash;
       }
-      return parseInt(concat);
+      return hashValue ;
     },
 
     getBucketIndexByKey(value: string): number {
       let hash = this.generateHash(value);
       return  Math.abs(hash % this.nrBuckets);
-    },
-
-    paginate(){
-      let pageCnt = 0;
-      let currentPage = 0;
-      this.pages[0] = []
-      this.list.forEach((register, index) => {
-        if(pageCnt >= this.nrSizePage) {
-          currentPage ++
-          pageCnt = 0
-          this.pages[currentPage] = []
-        }
-        this.pages[currentPage].push({key: register, index: index, page: currentPage});
-        pageCnt ++
-      })
-    },
-
-    bucketDistribution(){
-      this.pages.forEach((page) => {
-        page.forEach( line =>{
-          let bucket = this.buckets[this.getBucketIndexByKey(line.key)]
-          while (bucket.overflow != undefined) {
-            bucket = bucket.overflow;
-            if(this.nrOverflows > 0) this.nrCollisions += bucket.lines.length;
-            this.nrOverflows++;
-          }
-          if (bucket.lines.length == this.nrSizeBucket) {
-            bucket.overflow = new Bucket();
-            bucket = bucket.overflow;
-          }
-          if(!bucket.lines) bucket.lines = []
-          bucket.lines.push(line);
-          }
-        )
-      })
-    },
-
-    generateBuckets() {
-      this.nrBuckets = Math.ceil(this.list.length / this.nrSizeBucket);
-      for (let i = 0; i < this.nrBuckets; i++) {
-        this.buckets[i] = new Bucket();
-        this.buckets[i].lines = [];
-        this.buckets[i].index = i;
-      }
-      this.bucketDistribution();
     },
 
     tableScan(scanAmount: number) {
@@ -282,7 +276,31 @@ export default defineComponent({
         this.scanLines.push({key: this.list[i],index: i, page: 0, })
       }
       this.fgModalScan = true;
-    }
+    },
+    onPage(event: any){
+      this.currentPage = event.page
+    },
+    async getNumberOfOverflows(bucket: Bucket) : Promise<number | undefined> {
+      let n = 0;
+      let aux = bucket;
+      while (aux.overflow) {
+        aux = aux.overflow;
+        n++;
+      }
+      return n;
+    },
+    async getBuckets(bucket: Bucket) : Promise<Bucket[]>{
+      let buckets: Bucket[] = [];
+      buckets.push(bucket);
+      while (bucket.overflow) {
+        bucket = bucket.overflow;
+        buckets.push(bucket);
+      }
+      return buckets;
+    },
+    toggleRowExpansion(row: { overflow: boolean; }) {
+      row.overflow = !row.overflow;
+    },
   },
 
 });
